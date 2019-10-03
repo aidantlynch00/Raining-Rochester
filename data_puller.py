@@ -1,6 +1,11 @@
 from lxml import html
 import requests
 from datetime import timedelta, date
+from math import *
+
+
+LATITUDE = 43.161030
+LONGITUDE = -77.610924
 
 
 def daterange(start_date, end_date):
@@ -20,14 +25,28 @@ def main():
     page = requests.get("https://www.wpc.ncep.noaa.gov/qpf/obsmaps/p24i_20191002_sortbyvalue.txt", stream = True, headers = header)
     precip_data = page.text.split("\n")
     
-    lines = [", ".join(line.strip().split()) \
-        for line in precip_data][6:len(precip_data) - 1] # [6:last] to get rid of the file header and last empty line
+    # Strip request content of whitespace and order into tuples of data in format (precipitation, latitude, longitude)
+    data = [", ".join(point.strip().split()) \
+        for point in precip_data][6:len(precip_data) - 1] # [6:last] to get rid of the file header and last empty line
+    data = [ ( float(data[0]), float(data[1]), float(data[2]) ) for data in (point.split(", ") for point in data) ]
         
-    print(lines)
+    # Determine closest data point to ROC
+    closest = 1000000  # Arbitrary large distance to start as closest
+    precip = 0
+    for point in data:
+        a = (LATITUDE - point[1])
+        b = (LONGITUDE - point[2])
+        distance = sqrt(a**2 + b**2)
 
-    # doc = html.fromstring(page.content)
-    # xpath_precip = '/html/body/app/city-history/city-history-layout/div/div[2]/section/div[2]/div[2]/div/div[1]/div/div/city-history-summary/div/div[2]/table/tbody[2]/tr/td[1]'
-    # print(doc.xpath(xpath_precip))
+        if distance < closest:
+            precip = point[0]
+            closest = distance
+
+    print(closest)
+
+    # Save point to data.txt
+    with open("data.txt", "w") as file:
+        file.write(str(precip))
     
 
 if __name__ == "__main__":
