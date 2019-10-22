@@ -1,4 +1,6 @@
 # Ignore
 /venv
 /data/*
-data.txt
+*.class
+/__pycache__
+/.vscode
